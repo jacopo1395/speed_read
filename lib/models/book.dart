@@ -16,9 +16,9 @@ class Book {
       this.length,
       this.path,
       this.author,
-      this.completion,
+      this.completion = 0,
       this.lastOpen,
-      this.favorite});
+      this.favorite = false});
 
   Map<String, dynamic> toMap() {
     var map = <String, dynamic>{};
@@ -39,8 +39,8 @@ class Book {
       id: map['id'] as int,
       title: map['title'] as String,
       path: map['path'] as String,
-      text: map['text'] as String,
-      length: map['length'] as int,
+      // text: map['text'] as String,
+      // length: map['length'] as int,
       author: map['author'] as String,
       completion: map['completion'] as int,
       // lastOpen: DateTime.parse(map['lastOpen'] as String),

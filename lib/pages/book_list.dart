@@ -2,10 +2,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf_text/pdf_text.dart';
+import 'package:speed_read/colors.dart';
+import 'package:speed_read/constants.dart';
 import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
+import 'package:speed_read/theme.dart';
 
 class BookListPage extends StatefulWidget {
   @override
@@ -36,6 +39,8 @@ class _BookListPageState extends State<BookListPage> {
     /// Picks a new PDF document from the device
     PDFDoc? _pdfDoc;
     var filePickerResult = await FilePicker.platform.pickFiles();
+
+    /// get info from pdf
     if (filePickerResult != null) {
       _pdfDoc = await PDFDoc.fromPath(filePickerResult.files.single.path!);
     }
@@ -44,15 +49,12 @@ class _BookListPageState extends State<BookListPage> {
       return;
     }
 
-    String text =
-        "Ciao questo è un testo di prova, deve essere molto lungo taajkslf asdf asd asd fa f asf sf asd fa fs df asd fs fs df hkljlksdjf sdf ";
-    // String text = await _pdfDoc.text;
+    // TODO add a message error if file is not valid
+
     PDFDocInfo info = _pdfDoc.info;
     var newBook = Book(
         path: filePickerResult.files.single.path,
         title: info.title,
-        text: text,
-        length: text.length,
         author: info.author);
 
     setState(() {
@@ -64,23 +66,94 @@ class _BookListPageState extends State<BookListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text("Your Books"),
-        automaticallyImplyLeading: false,
+      body: NestedScrollView(
+        headerSliverBuilder: (BuildContext context, bool innerBoxIsScrolled) {
+          return <Widget>[
+            buildTopBar(),
+          ];
+        },
+        body: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: padding),
+          child: ListView(
+              children: books.map((book) => buildBookCard(book)).toList()),
+        ),
       ),
-      body: ListView(
-          children: books
-              .map((book) => ListTile(
-                    title: Text(book.title ?? "unknown title"),
-                    onTap: () => NavigationService()
-                        .navigateTo(CURSOR_PAGE, arguments: book),
-                  ))
-              .toList()),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _addBook,
-        tooltip: 'Add Book',
-        child: Icon(Icons.add),
-      ), // This tr
+      bottomNavigationBar: buildBottomBar(),
     );
+  }
+
+  SliverAppBar buildTopBar() {
+    return SliverAppBar(
+      expandedHeight: barHeight,
+      floating: false,
+      pinned: true,
+      backgroundColor: greenPrimary,
+      shape: ContinuousRectangleBorder(
+          borderRadius: BorderRadius.only(
+              bottomLeft: Radius.circular(borderRadius),
+              bottomRight: Radius.circular(borderRadius))),
+      flexibleSpace: FlexibleSpaceBar(
+        centerTitle: false,
+        title: Text(
+          "Your Books",
+          style: AppTheme.primaryTextTheme.headline1,
+        ),
+      ),
+    );
+  }
+
+  Container buildBottomBar() {
+    return Container(
+      margin: EdgeInsets.only(bottom: padding, left: padding, right: padding),
+      child: Material(
+        borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
+        color: greenAccent,
+        child: Padding(
+          padding: const EdgeInsets.all(padding),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              IconButton(
+                icon: Icon(
+                  Icons.settings,
+                  color: purple,
+                ),
+                onPressed: _addBook,
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.note_add,
+                  color: purple,
+                ),
+                onPressed: _addBook,
+              ),
+              IconButton(
+                icon: Icon(
+                  Icons.picture_as_pdf,
+                  color: purple,
+                ),
+                onPressed: _addBook,
+              )
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Card buildBookCard(Book book) {
+    return Card(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(borderRadius),
+        ),
+        color: greenSecondary,
+        child: ListTile(
+          // leading: Icon(Icons.favorite_border),
+          title: Text(book.title ?? "unknown title"),
+          subtitle: Text(book.author ?? "unknown author"),
+          trailing: Icon(Icons.more_vert),
+          onTap: () =>
+              NavigationService().navigateTo(CURSOR_PAGE, arguments: book),
+        ));
   }
 }
