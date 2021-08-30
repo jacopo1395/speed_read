@@ -2,13 +2,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf_text/pdf_text.dart';
-import 'package:speed_read/colors.dart';
-import 'package:speed_read/constants.dart';
+import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/colors.dart';
+import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/constants.dart';
 import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
-import 'package:speed_read/theme.dart';
+import 'package:speed_read/constants/theme.dart';
 
 class BookListPage extends StatefulWidget {
   @override
@@ -54,7 +54,9 @@ class _BookListPageState extends State<BookListPage> {
     PDFDocInfo info = _pdfDoc.info;
     var newBook = Book(
         path: filePickerResult.files.single.path,
-        title: info.title,
+        title: info.title
+
+        ,
         author: info.author);
 
     setState(() {

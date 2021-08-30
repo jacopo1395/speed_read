@@ -11,7 +11,7 @@ class Book {
 
   Book(
       {this.id,
-      this.title = "unknown title",
+      this.title,
       this.text,
       this.length,
       this.path,

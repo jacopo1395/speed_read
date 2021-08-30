@@ -1,6 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'package:speed_read/colors.dart';
+import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/colors.dart';
 
 class AppTheme {
 

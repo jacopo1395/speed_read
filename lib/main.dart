@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:speed_read/constants/theme.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
-import 'package:speed_read/theme.dart';
+import 'package:speed_read/service/shared_preferences.service.dart';
 
 void main() {
   runApp(MyApp());
+  SharedPreferenceService().initSharedPreferencesInstance();
 }
 
 class MyApp extends StatelessWidget {
