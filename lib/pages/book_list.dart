@@ -2,13 +2,13 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf_text/pdf_text.dart';
-import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/colors.dart';
-import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/constants.dart';
+import 'package:speed_read/constants/colors.dart';
+import 'package:speed_read/constants/constants.dart';
+import 'package:speed_read/constants/theme.dart';
 import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
-import 'package:speed_read/constants/theme.dart';
 
 class BookListPage extends StatefulWidget {
   @override
@@ -54,15 +54,13 @@ class _BookListPageState extends State<BookListPage> {
     PDFDocInfo info = _pdfDoc.info;
     var newBook = Book(
         path: filePickerResult.files.single.path,
-        title: info.title
-
-        ,
+        title: info.title,
         author: info.author);
-
+    int id = await _bookRepository.save(newBook);
+    newBook.id = id;
     setState(() {
       this.books.add(newBook);
     });
-    _bookRepository.save(newBook);
   }
 
   @override
@@ -98,7 +96,7 @@ class _BookListPageState extends State<BookListPage> {
         centerTitle: false,
         title: Text(
           "Your Books",
-          style: AppTheme.primaryTextTheme.headline1,
+          style: AppThemes.primaryTextTheme.headline1,
         ),
       ),
     );
@@ -120,14 +118,16 @@ class _BookListPageState extends State<BookListPage> {
                   Icons.settings,
                   color: purple,
                 ),
-                onPressed: _addBook,
+                onPressed: () {
+                  NavigationService().navigateTo(FONT_SETTINGS);
+                },
               ),
               IconButton(
                 icon: Icon(
                   Icons.note_add,
                   color: purple,
                 ),
-                onPressed: _addBook,
+                onPressed: () {},
               ),
               IconButton(
                 icon: Icon(
@@ -153,9 +153,52 @@ class _BookListPageState extends State<BookListPage> {
           // leading: Icon(Icons.favorite_border),
           title: Text(book.title ?? "unknown title"),
           subtitle: Text(book.author ?? "unknown author"),
-          trailing: Icon(Icons.more_vert),
+          trailing: PopupMenuButton<Option>(
+            onSelected: onSelectedOption,
+            color: white,
+            icon: Icon(
+              Icons.more_vert,
+              color: grey,
+            ),
+            itemBuilder: (BuildContext context) {
+              return options.map((Option option) {
+                return PopupMenuItem<Option>(
+                    value: option.setBookId(book.id!),
+                    child: Text(option.title));
+              }).toList();
+            },
+          ),
           onTap: () =>
               NavigationService().navigateTo(CURSOR_PAGE, arguments: book),
         ));
   }
+
+  void onSelectedOption(Option option) {
+    if (option.type == OptionType.REMOVE) {
+      setState(() {
+        this.books.removeWhere((elem) => elem.id == option.bookId);
+      });
+      BookRepository().delete(option.bookId!);
+    }
+  }
 }
+
+class Option {
+  final String title;
+  final OptionType type;
+  int? bookId;
+
+  Option({required this.title, required this.type, this.bookId});
+
+  Option setBookId(int bookId) {
+    this.bookId = bookId;
+    return this;
+  }
+}
+
+List<Option> options = <Option>[
+  Option(title: "delete", type: OptionType.REMOVE),
+];
+
+
+enum OptionType { REMOVE }

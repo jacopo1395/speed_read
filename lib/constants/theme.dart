@@ -1,18 +1,19 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
-import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/colors.dart';
+import 'package:speed_read/constants/colors.dart';
+import 'package:speed_read/service/shared_preferences.service.dart';
 
-class AppTheme {
-
+class AppThemes {
   static ThemeData get primaryTheme {
     final base = ThemeData.light();
     return base.copyWith(
         textTheme: _buildPrimaryTextTheme(base.textTheme),
+        appBarTheme: _buildPrimaryAppBarTheme(base),
         scaffoldBackgroundColor: white);
   }
 
   static TextTheme get primaryTextTheme {
-   return primaryTheme.textTheme;
+    return primaryTheme.textTheme;
   }
 
   static TextTheme _buildPrimaryTextTheme(TextTheme base) {
@@ -40,13 +41,14 @@ class AppTheme {
           ),
           headline5: base.headline5?.copyWith(
             fontSize: 22,
-            color: Colors.blue,
+            color: Colors.red,
             fontWeight: FontWeight.w700,
           ),
+          // title appbar
           headline6: base.headline6?.copyWith(
-            fontSize: 22,
-            color: Colors.orange,
-            fontWeight: FontWeight.w700,
+            fontSize: 20,
+            color: black,
+            fontWeight: FontWeight.bold,
           ),
           // title
           subtitle1: base.subtitle1?.copyWith(
@@ -65,10 +67,11 @@ class AppTheme {
             fontWeight: FontWeight.normal,
             color: black,
           ),
+          // input text
           bodyText2: base.bodyText2?.copyWith(
             fontWeight: FontWeight.normal,
-            fontSize: 16,
-            color: Colors.white,
+            fontSize: 18,
+            color: black,
           ),
           // subtitle
           caption: base.caption?.copyWith(
@@ -91,4 +94,10 @@ class AppTheme {
         );
   }
 
+  static _buildPrimaryAppBarTheme(ThemeData themeData) {
+    return themeData.appBarTheme.copyWith(
+        iconTheme: themeData.iconTheme.copyWith(color: black),
+        color: greenPrimary,
+        textTheme: _buildPrimaryTextTheme(themeData.textTheme));
+  }
 }

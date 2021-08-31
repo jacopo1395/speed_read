@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
   static const SPEED = "speed";
+  static const FONT_SIZE = "fontSize";
 
   SharedPreferenceService._();
 
@@ -48,5 +49,14 @@ class SharedPreferenceService {
 
   void setSpeed(int value) async {
     await _prefs!.setInt(SPEED, value);
+  }
+
+
+  double get fontSize {
+    return _prefs!.getDouble(FONT_SIZE) ?? 18;
+  }
+
+  void setFontSize(double value) async {
+    await _prefs!.setDouble(FONT_SIZE, value);
   }
 }

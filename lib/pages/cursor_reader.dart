@@ -4,13 +4,13 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf_text/pdf_text.dart';
-import 'package:speed_read/constants/theme.dart';
+import 'package:speed_read/constants/colors.dart';
+import 'package:speed_read/constants/constants.dart';
 import 'package:speed_read/models/book.dart';
+import 'package:speed_read/routes.dart';
+import 'package:speed_read/service/navigation.service.dart';
 import 'package:speed_read/service/shared_preferences.service.dart';
 import 'package:speed_read/utils.dart';
-
-import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/colors.dart';
-import 'file:///C:/Users/jack1/Documents/flut/speed_read/lib/constants/constants.dart';
 
 class CursorReaderPage extends StatefulWidget {
   final Book book;
@@ -80,8 +80,11 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
                   .split(" ")
                   .mapIndexed((word, index) => TextSpan(
                       text: word + " ",
-                      style: TextStyle(
-                          color: AppTheme.primaryTextTheme.bodyText1?.color
+                      style: Theme.of(context).textTheme.bodyText1?.copyWith(
+                          color: Theme.of(context)
+                              .textTheme
+                              .bodyText1
+                              ?.color
                               ?.withOpacity(opacity(index)))))
                   .toList()),
         ),
@@ -91,28 +94,27 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   Row buildToolBar() {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         IconButton(
             icon: Icon(
               Icons.settings,
               color: purple,
             ),
-            onPressed: () {}),
+            onPressed: () {
+              NavigationService().navigateTo(FONT_SETTINGS);
+            }),
         Material(
           color: purple,
           borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
-            child: Text("$_pageIndex/$_pages"),
+            child: Text(
+              "$_pageIndex/$_pages",
+              style: TextStyle(color: white),
+            ),
           ),
         ),
-        IconButton(
-            icon: Icon(
-              Icons.text_fields,
-              color: purple,
-            ),
-            onPressed: () {})
       ],
     );
   }
@@ -139,6 +141,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
               }
             });
           } else {
+            debugPrint(DateTime.now().toIso8601String());
             setState(() {
               _counter++;
             });
@@ -181,17 +184,17 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Slider(
-            value: _pageIndex.floorToDouble(),
-            min: 1,
-            max: _pages.toDouble(),
-            onChanged: (double value) {
-              setState(() {
-                _pageIndex = value.toInt();
-              });
-              loadPdf();
-            },
-          ),
+          // Slider(
+          //   value: _pageIndex.floorToDouble(),
+          //   min: 1,
+          //   max: _pages.toDouble(),
+          //   onChanged: (double value) {
+          //     setState(() {
+          //       _pageIndex = value.toInt();
+          //     });
+          //     loadPdf();
+          //   },
+          // ),
           Material(
             color: greenAccent,
             borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
@@ -200,11 +203,11 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
-                  IconButton(
-                    icon: Icon(Icons.skip_previous),
-                    onPressed: (){},
-                    color: purple,
-                  ),
+                  // IconButton(
+                  //   icon: Icon(Icons.skip_previous),
+                  //   onPressed: () {},
+                  //   color: purple,
+                  // ),
                   IconButton(
                     icon: Icon(Icons.fast_rewind),
                     onPressed: decreaseSpeed,
@@ -216,11 +219,11 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
                     onPressed: increaseSpeed,
                     color: purple,
                   ),
-                  IconButton(
-                    icon: Icon(Icons.skip_next),
-                    onPressed: (){},
-                    color: purple,
-                  ),
+                  // IconButton(
+                  //   icon: Icon(Icons.skip_next),
+                  //   onPressed: () {},
+                  //   color: purple,
+                  // ),
                 ],
               ),
             ),
@@ -245,8 +248,9 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   void increaseSpeed() {
+    debugPrint(_speed.toString());
     setState(() {
-      _speed += 200;
+      _speed -= 10;
     });
     SharedPreferenceService().setSpeed(_speed);
     resetTimer();
@@ -254,8 +258,9 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   void decreaseSpeed() {
+    debugPrint(_speed.toString());
     setState(() {
-      _speed -= 200;
+      _speed += 10;
     });
     SharedPreferenceService().setSpeed(_speed);
     resetTimer();
