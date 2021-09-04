@@ -1,16 +1,20 @@
 import 'dart:async';
 import 'dart:math';
 
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:pdf_text/pdf_text.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:speed_read/constants/colors.dart';
 import 'package:speed_read/constants/constants.dart';
+import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
 import 'package:speed_read/service/shared_preferences.service.dart';
-import 'package:speed_read/utils.dart';
+import 'package:speed_read/utils/dynamic_size.dart';
+import 'package:speed_read/utils/splitted_text.dart';
+import 'package:speed_read/utils/utils.dart';
 
 class CursorReaderPage extends StatefulWidget {
   final Book book;
@@ -22,34 +26,58 @@ class CursorReaderPage extends StatefulWidget {
 }
 
 class _CursorReaderPageState extends State<CursorReaderPage> {
-  int _counter = 0;
-  int _length = 0;
-  String textToRead = "";
-  Timer? _timer;
   Book book;
-  int _pageIndex = 1;
-  int _pages = 1;
+
+  int _cursor = 0;
+
+  List<String> _paragraphsText = [];
+  List<int> _paragraphsLength = [];
+
+  int _paragraphIndex = 1;
+  int _totalPages = 0;
+
+  Timer? _timer;
   int _speed = SharedPreferenceService().speed;
 
-  PDFDoc? _pdfDoc;
+  final PageController _pageController = PageController();
+  final DynamicSize _dynamicSize = DynamicSizeImpl();
+  final SplittedText _splittedText = SplittedTextImpl();
+  final GlobalKey pageKey = GlobalKey();
+  Size? _size;
 
   @override
   void initState() {
-    loadPdf();
+    WidgetsBinding.instance!.addPostFrameCallback((_) {
+      initReader();
+    });
+    super.initState();
   }
 
-  void loadPdf() async {
-    _pdfDoc = await PDFDoc.fromPath(book.path!);
-    if (_pdfDoc == null) {
-      return;
-    }
+  Future<void> initReader() async {
+    _size = _dynamicSize.getSize(pageKey);
 
-    String text = await _pdfDoc!.pageAt(_pageIndex).text;
-    _pages = await _pdfDoc!.pages.length;
+    _paragraphsText = _splittedText.getSplittedText(
+        _size!, Theme
+        .of(context)
+        .textTheme
+        .bodyText1!
+        .copyWith(), book.text!);
+
+    _paragraphsLength =
+        _paragraphsText.map((e) =>
+        e
+            .split(RegExp('\\w*\\W'))
+            .length).toList();
+
+    book = await refreshBook();
     setState(() {
-      this.textToRead = text;
-      _length = textToRead.split(" ").length;
+      _totalPages = _paragraphsText.length;
+      _paragraphIndex = findParagraph();
+      _cursor = book.completion;
     });
+   _pageController.animateToPage(
+        _paragraphIndex - 1, duration: Duration(milliseconds: 50),
+        curve: Curves.easeInToLinear);
   }
 
   _CursorReaderPageState(this.book);
@@ -73,23 +101,54 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   Expanded buildReader() {
     return Expanded(
-      child: SingleChildScrollView(
-        child: RichText(
-          text: TextSpan(
-              children: textToRead
-                  .split(" ")
-                  .mapIndexed((word, index) => TextSpan(
-                      text: word + " ",
-                      style: Theme.of(context).textTheme.bodyText1?.copyWith(
-                          color: Theme.of(context)
-                              .textTheme
-                              .bodyText1
-                              ?.color
-                              ?.withOpacity(opacity(index)))))
-                  .toList()),
-        ),
+      child: Container(
+        key: pageKey,
+        child: PageView.builder(
+            controller: _pageController,
+            onPageChanged: (val) {
+              setState(() {
+                _paragraphIndex = val + 1;
+              });
+            },
+            itemCount: _totalPages,
+            itemBuilder: (context, index) {
+              return buildRichText(index);
+            }),
       ),
     );
+  }
+
+  RichText buildRichText(int paragraph) {
+    return RichText(
+      text: TextSpan(
+          children: RegExp('\\w*\\W')
+              .allMatches(_paragraphsText[paragraph])
+              .mapIndexed((word, index) =>
+              TextSpan(
+                  text: word.group(0),
+                  recognizer: _tapRecognizer(getNumberWord(paragraph, index)),
+                  style: Theme
+                      .of(context)
+                      .textTheme
+                      .bodyText1
+                      ?.copyWith(
+                      color: Theme
+                          .of(context)
+                          .textTheme
+                          .bodyText1
+                          ?.color
+                          ?.withOpacity(
+                          opacity(getNumberWord(paragraph, index))))))
+              .toList()),
+    );
+  }
+
+  int getNumberWord(int paragraph, int index) {
+    var offset = 0;
+    for (var i = 0; i < paragraph; i++) {
+      offset += _paragraphsLength[i];
+    }
+    return index + offset;
   }
 
   Row buildToolBar() {
@@ -99,18 +158,21 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
         IconButton(
             icon: Icon(
               Icons.settings,
-              color: purple,
+              color: black,
             ),
-            onPressed: () {
-              NavigationService().navigateTo(FONT_SETTINGS);
+            onPressed: () async {
+              stopTimer();
+              await NavigationService().navigateTo(FONT_SETTINGS);
+              initReader();
             }),
+        Text(((1/_speed*1000)*60).round().toString()+' words/min.'),
         Material(
-          color: purple,
+          color: black,
           borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
           child: Padding(
             padding: const EdgeInsets.all(8.0),
             child: Text(
-              "$_pageIndex/$_pages",
+              '$_paragraphIndex/$_totalPages',
               style: TextStyle(color: white),
             ),
           ),
@@ -120,35 +182,41 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   double opacity(int index) {
-    var distance = (index.toDouble() - _counter).abs();
+    var distance = (index.toDouble() - _cursor).abs();
     return max(1.0 - (distance * 0.2), 0.2);
   }
 
   void startTimer() {
     var oneSec = Duration(milliseconds: _speed);
-    if (_timer == null) {
-      _timer = new Timer.periodic(
-        oneSec,
-        (Timer timer) {
-          if (_counter >= _length) {
-            setState(() {
-              _pageIndex++;
-              if (_pageIndex <= _pdfDoc!.pages.length) {
-                _counter = 0;
-                loadPdf();
-              } else {
-                timer.cancel();
-              }
-            });
-          } else {
-            debugPrint(DateTime.now().toIso8601String());
-            setState(() {
-              _counter++;
-            });
-          }
-        },
-      );
-    }
+    _timer ??= Timer.periodic(
+      oneSec,
+          (Timer timer) {
+        if (_cursor >= book.length!) {
+          // end of book
+          _timer!.cancel();
+        }
+
+        if (_cursor + 1 ==
+            _paragraphsLength
+                .getRange(0, _paragraphIndex)
+                .reduce((value, element) => value + element)) {
+          setState(() {
+            //next page
+            _paragraphIndex++;
+            _pageController.animateToPage(_paragraphIndex - 1,
+                duration: Duration(milliseconds: 50),
+                curve: Curves.easeInToLinear);
+          });
+        } else {
+          // next word
+          debugPrint(_cursor.toString());
+          setState(() {
+            _cursor++;
+            BookRepository().update(book.copyWith(completion: _cursor));
+          });
+        }
+      },
+    );
   }
 
   void stopTimer() {
@@ -236,15 +304,15 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   IconButton buildPlayPause() {
     return _timer != null && _timer!.isActive
         ? IconButton(
-            icon: Icon(Icons.pause),
-            onPressed: stopTimer,
-            color: purple,
-          )
+      icon: Icon(Icons.pause),
+      onPressed: stopTimer,
+      color: purple,
+    )
         : IconButton(
-            icon: Icon(Icons.play_arrow),
-            onPressed: startTimer,
-            color: purple,
-          );
+      icon: Icon(Icons.play_arrow),
+      onPressed: startTimer,
+      color: purple,
+    );
   }
 
   void increaseSpeed() {
@@ -265,5 +333,34 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
     SharedPreferenceService().setSpeed(_speed);
     resetTimer();
     startTimer();
+  }
+
+  GestureRecognizer? _tapRecognizer(int index) {
+    return TapGestureRecognizer()
+      ..onTap = () async {
+        setState(() {
+          _cursor = index;
+        });
+        var i =
+        await BookRepository().update(book.copyWith(completion: _cursor));
+        debugPrint(i.toString());
+      };
+  }
+
+  int findParagraph() {
+    var result = 1;
+    var sum = 0;
+    for (var i = 0; i < _paragraphsLength.length; i++) {
+      sum += _paragraphsLength[i];
+      if (book.completion < sum) {
+        result = i + 1;
+        break;
+      }
+    }
+    return result;
+  }
+
+  Future<Book> refreshBook() async {
+    return (await BookRepository().findById(book.id!))!;
   }
 }

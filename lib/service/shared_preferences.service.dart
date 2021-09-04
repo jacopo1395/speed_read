@@ -2,8 +2,10 @@ import 'package:flutter/cupertino.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class SharedPreferenceService {
-  static const SPEED = "speed";
-  static const FONT_SIZE = "fontSize";
+  static const SPEED = 'speed';
+  static const FONT_SIZE = 'fontSize';
+  static const FONT_COLOR = 'fontColor';
+  static const BACKGROUND_COLOR = 'backgroundColor';
 
   SharedPreferenceService._();
 
@@ -58,5 +60,13 @@ class SharedPreferenceService {
 
   void setFontSize(double value) async {
     await _prefs!.setDouble(FONT_SIZE, value);
+  }
+
+  int get fontColor {
+    return _prefs!.getInt(FONT_COLOR) ?? 0xFF4F514A;
+  }
+
+  void setFontColor(int value) async {
+    await _prefs!.setInt(FONT_COLOR, value);
   }
 }

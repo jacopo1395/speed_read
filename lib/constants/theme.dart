@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:speed_read/constants/colors.dart';
-import 'package:speed_read/service/shared_preferences.service.dart';
 
 class AppThemes {
   static ThemeData get primaryTheme {
@@ -94,7 +93,7 @@ class AppThemes {
         );
   }
 
-  static _buildPrimaryAppBarTheme(ThemeData themeData) {
+  static AppBarTheme? _buildPrimaryAppBarTheme(ThemeData themeData) {
     return themeData.appBarTheme.copyWith(
         iconTheme: themeData.iconTheme.copyWith(color: black),
         color: greenPrimary,

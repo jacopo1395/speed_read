@@ -7,7 +7,7 @@ import 'package:sqflite/sqflite.dart';
 
 class LocalStorageService {
   static final LocalStorageService _instance = LocalStorageService._();
-  static var _database;
+  static Database? _database;
 
   static const int DB_VERSION = 1;
 
@@ -19,11 +19,11 @@ class LocalStorageService {
 
   Future<Database> get db async {
     if (_database != null) {
-      return _database;
+      return _database!;
     }
     _database = await _init();
 
-    return _database;
+    return _database!;
   }
 
   Future<Database> _init() async {

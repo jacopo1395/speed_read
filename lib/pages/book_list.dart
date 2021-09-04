@@ -16,7 +16,7 @@ class BookListPage extends StatefulWidget {
 }
 
 class _BookListPageState extends State<BookListPage> {
-  BookRepository _bookRepository = BookRepository();
+  final BookRepository _bookRepository = BookRepository();
 
   List<Book> books = [];
 
@@ -42,6 +42,11 @@ class _BookListPageState extends State<BookListPage> {
 
     /// get info from pdf
     if (filePickerResult != null) {
+      var fakeBook = Book(title: 'Loading', author: '');
+      setState(() {
+        books.add(fakeBook);
+      });
+
       _pdfDoc = await PDFDoc.fromPath(filePickerResult.files.single.path!);
     }
 
@@ -51,15 +56,19 @@ class _BookListPageState extends State<BookListPage> {
 
     // TODO add a message error if file is not valid
 
-    PDFDocInfo info = _pdfDoc.info;
+    var text = await _pdfDoc.text;
+    var info = _pdfDoc.info;
     var newBook = Book(
         path: filePickerResult.files.single.path,
+        text: text.replaceAll(RegExp('-\n'), ''),
+        length: RegExp('\\w*\\W').allMatches(text).length,
         title: info.title,
         author: info.author);
-    int id = await _bookRepository.save(newBook);
+    var id = await _bookRepository.save(newBook);
     newBook.id = id;
     setState(() {
-      this.books.add(newBook);
+      books.removeLast();
+      books.add(newBook);
     });
   }
 
@@ -87,7 +96,7 @@ class _BookListPageState extends State<BookListPage> {
       expandedHeight: barHeight,
       floating: false,
       pinned: true,
-      backgroundColor: greenPrimary,
+      backgroundColor: white,
       shape: ContinuousRectangleBorder(
           borderRadius: BorderRadius.only(
               bottomLeft: Radius.circular(borderRadius),
@@ -95,7 +104,7 @@ class _BookListPageState extends State<BookListPage> {
       flexibleSpace: FlexibleSpaceBar(
         centerTitle: false,
         title: Text(
-          "Your Books",
+          'Your Books',
           style: AppThemes.primaryTextTheme.headline1,
         ),
       ),
@@ -116,7 +125,7 @@ class _BookListPageState extends State<BookListPage> {
               IconButton(
                 icon: Icon(
                   Icons.settings,
-                  color: purple,
+                  color: white,
                 ),
                 onPressed: () {
                   NavigationService().navigateTo(FONT_SETTINGS);
@@ -125,14 +134,14 @@ class _BookListPageState extends State<BookListPage> {
               IconButton(
                 icon: Icon(
                   Icons.note_add,
-                  color: purple,
+                  color: white,
                 ),
                 onPressed: () {},
               ),
               IconButton(
                 icon: Icon(
                   Icons.picture_as_pdf,
-                  color: purple,
+                  color: white,
                 ),
                 onPressed: _addBook,
               )
@@ -148,35 +157,37 @@ class _BookListPageState extends State<BookListPage> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(borderRadius),
         ),
-        color: greenSecondary,
+        color: white,
         child: ListTile(
-          // leading: Icon(Icons.favorite_border),
-          title: Text(book.title ?? "unknown title"),
-          subtitle: Text(book.author ?? "unknown author"),
-          trailing: PopupMenuButton<Option>(
-            onSelected: onSelectedOption,
-            color: white,
-            icon: Icon(
-              Icons.more_vert,
-              color: grey,
+            // leading: Icon(Icons.favorite_border),
+            title: Text(book.title ?? 'unknown title'),
+            subtitle: Text(book.author ?? 'unknown author'),
+            trailing: PopupMenuButton<Option>(
+              onSelected: onSelectedOption,
+              color: trueWhite,
+              icon: Icon(
+                Icons.more_vert,
+                color: grey,
+              ),
+              itemBuilder: (BuildContext context) {
+                return options.map((Option option) {
+                  return PopupMenuItem<Option>(
+                      value: option.setBookId(book.id!),
+                      child: Text(option.title));
+                }).toList();
+              },
             ),
-            itemBuilder: (BuildContext context) {
-              return options.map((Option option) {
-                return PopupMenuItem<Option>(
-                    value: option.setBookId(book.id!),
-                    child: Text(option.title));
-              }).toList();
-            },
-          ),
-          onTap: () =>
-              NavigationService().navigateTo(CURSOR_PAGE, arguments: book),
-        ));
+            onTap: () {
+              if (book.title != 'Loading') {
+                NavigationService().navigateTo(CURSOR_PAGE, arguments: book);
+              }
+            }));
   }
 
   void onSelectedOption(Option option) {
     if (option.type == OptionType.REMOVE) {
       setState(() {
-        this.books.removeWhere((elem) => elem.id == option.bookId);
+        books.removeWhere((elem) => elem.id == option.bookId);
       });
       BookRepository().delete(option.bookId!);
     }
@@ -197,8 +208,7 @@ class Option {
 }
 
 List<Option> options = <Option>[
-  Option(title: "delete", type: OptionType.REMOVE),
+  Option(title: 'delete', type: OptionType.REMOVE),
 ];
-
 
 enum OptionType { REMOVE }
