@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:speed_read/constants/theme.dart';
 import 'package:speed_read/routes.dart';
-import 'package:speed_read/service/local_storage.service.dart';
 import 'package:speed_read/service/navigation.service.dart';
 import 'package:speed_read/service/shared_preferences.service.dart';
 
@@ -11,7 +10,7 @@ StreamController<ThemeData> isThemeChanged = StreamController();
 
 void main() async{
   runApp(MyApp());
-  SharedPreferenceService().initSharedPreferencesInstance();
+  await SharedPreferenceService().initSharedPreferencesInstance();
 }
 
 

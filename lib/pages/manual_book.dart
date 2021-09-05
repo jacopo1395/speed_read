@@ -3,7 +3,6 @@ import 'package:flutter/widgets.dart';
 import 'package:speed_read/dao/book_repository.dart';
 
 import 'package:speed_read/models/book.dart';
-import 'package:speed_read/service/local_storage.service.dart';
 import 'package:speed_read/service/navigation.service.dart';
 import 'package:uuid/uuid.dart';
 

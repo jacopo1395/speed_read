@@ -158,7 +158,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
             onPressed: () async {
               stopTimer();
               await NavigationService().navigateTo(FONT_SETTINGS);
-              initReader();
+              await initReader();
             }),
         Text(((1 / _speed * 1000) * 60).round().toString() + ' words/min.'),
         Material(

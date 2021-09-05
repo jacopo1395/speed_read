@@ -14,8 +14,8 @@ class MarkdownParser {
     text.split('\n').map((line) {
       var head = RegExp('^ *#+ +').hasMatch(line);
       var point = RegExp('^ *- +').hasMatch(line);
-      var quote = RegExp('^ *> +').hasMatch(line);
-      var list = RegExp('^ *\\d+\\. +').hasMatch(line);
+      // var quote = RegExp('^ *> +').hasMatch(line);
+      // var list = RegExp('^ *\\d+\\. +').hasMatch(line);
 
       var base = Theme.of(context).textTheme.bodyText1!;
       if (head) {
