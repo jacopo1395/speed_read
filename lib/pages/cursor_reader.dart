@@ -40,8 +40,8 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   int _speed = SharedPreferenceService().speed;
 
   final PageController _pageController = PageController();
-  final DynamicSize _dynamicSize = DynamicSizeImpl();
-  final SplittedText _splittedText = SplittedTextImpl();
+  final DynamicSize _dynamicSize = DynamicSize();
+  final SplittedText _splittedText = SplittedText();
   final GlobalKey pageKey = GlobalKey();
   Size? _size;
 
@@ -54,49 +54,47 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   Future<void> initReader() async {
-    _size = _dynamicSize.getSize(pageKey);
+    book = await refreshBook();
+
+    _size = _dynamicSize.getSize(pageKey, context);
 
     _paragraphsText = _splittedText.getSplittedText(
-        _size!, Theme
-        .of(context)
-        .textTheme
-        .bodyText1!
-        .copyWith(), book.text!);
+        _size!, Theme.of(context).textTheme.bodyText1!.copyWith(), book.text);
 
-    _paragraphsLength =
-        _paragraphsText.map((e) =>
-        e
-            .split(RegExp('\\w*\\W'))
-            .length).toList();
+    _paragraphsLength = _paragraphsText
+        .map((e) => e.split(RegExp('\\w*(\$|\\W)')).length)
+        .toList();
 
-    book = await refreshBook();
     setState(() {
       _totalPages = _paragraphsText.length;
       _paragraphIndex = findParagraph();
       _cursor = book.completion;
     });
-   _pageController.animateToPage(
-        _paragraphIndex - 1, duration: Duration(milliseconds: 50),
-        curve: Curves.easeInToLinear);
+    unawaited(_pageController.animateToPage(_paragraphIndex - 1,
+        duration: Duration(milliseconds: 50), curve: Curves.easeInToLinear));
   }
 
   _CursorReaderPageState(this.book);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-        body: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.all(padding),
-            child: Column(
-              children: [
-                buildToolBar(),
-                buildReader(),
-              ],
-            ),
+    return Scaffold(body: buildBody(), bottomNavigationBar: buildBottomBar());
+  }
+
+  Container buildBody() {
+    return Container(
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(padding),
+          child: Column(
+            children: [
+              buildToolBar(),
+              buildReader(),
+            ],
           ),
         ),
-        bottomNavigationBar: buildBottomBar());
+      ),
+    );
   }
 
   Expanded buildReader() {
@@ -112,6 +110,9 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
             },
             itemCount: _totalPages,
             itemBuilder: (context, index) {
+              if (_totalPages == 0) {
+                return CircularProgressIndicator();
+              }
               return buildRichText(index);
             }),
       ),
@@ -121,24 +122,18 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   RichText buildRichText(int paragraph) {
     return RichText(
       text: TextSpan(
-          children: RegExp('\\w*\\W')
+          children: RegExp('\\w*(\$|\\W)')
               .allMatches(_paragraphsText[paragraph])
-              .mapIndexed((word, index) =>
-              TextSpan(
+              .mapIndexed((word, index) => TextSpan(
                   text: word.group(0),
                   recognizer: _tapRecognizer(getNumberWord(paragraph, index)),
-                  style: Theme
-                      .of(context)
-                      .textTheme
-                      .bodyText1
-                      ?.copyWith(
-                      color: Theme
-                          .of(context)
+                  style: Theme.of(context).textTheme.bodyText1?.copyWith(
+                      color: Theme.of(context)
                           .textTheme
                           .bodyText1
                           ?.color
                           ?.withOpacity(
-                          opacity(getNumberWord(paragraph, index))))))
+                              opacity(getNumberWord(paragraph, index))))))
               .toList()),
     );
   }
@@ -165,7 +160,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
               await NavigationService().navigateTo(FONT_SETTINGS);
               initReader();
             }),
-        Text(((1/_speed*1000)*60).round().toString()+' words/min.'),
+        Text(((1 / _speed * 1000) * 60).round().toString() + ' words/min.'),
         Material(
           color: black,
           borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
@@ -190,8 +185,8 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
     var oneSec = Duration(milliseconds: _speed);
     _timer ??= Timer.periodic(
       oneSec,
-          (Timer timer) {
-        if (_cursor >= book.length!) {
+      (Timer timer) {
+        if (_cursor >= book.length) {
           // end of book
           _timer!.cancel();
         }
@@ -267,7 +262,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
             color: greenAccent,
             borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
             child: Padding(
-              padding: const EdgeInsets.all(padding),
+              padding: const EdgeInsets.all(8),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceAround,
                 children: [
@@ -304,15 +299,15 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   IconButton buildPlayPause() {
     return _timer != null && _timer!.isActive
         ? IconButton(
-      icon: Icon(Icons.pause),
-      onPressed: stopTimer,
-      color: purple,
-    )
+            icon: Icon(Icons.pause),
+            onPressed: stopTimer,
+            color: purple,
+          )
         : IconButton(
-      icon: Icon(Icons.play_arrow),
-      onPressed: startTimer,
-      color: purple,
-    );
+            icon: Icon(Icons.play_arrow),
+            onPressed: startTimer,
+            color: purple,
+          );
   }
 
   void increaseSpeed() {
@@ -342,7 +337,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
           _cursor = index;
         });
         var i =
-        await BookRepository().update(book.copyWith(completion: _cursor));
+            await BookRepository().update(book.copyWith(completion: _cursor));
         debugPrint(i.toString());
       };
   }
@@ -361,6 +356,6 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   Future<Book> refreshBook() async {
-    return (await BookRepository().findById(book.id!))!;
+    return (await BookRepository().findById(book.id))!;
   }
 }

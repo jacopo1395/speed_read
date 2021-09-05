@@ -8,7 +8,7 @@ class PageManager {
   PDFDoc pdfDoc;
   List<Page> pages = List.empty();
   int pageNumber = 1;
-  final SplittedText _splittedText = SplittedTextImpl();
+  final SplittedText _splittedText = SplittedText();
 
   List<String> _paragraphsText = [];
   List<int> _paragraphsLength = [];

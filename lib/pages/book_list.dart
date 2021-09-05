@@ -1,7 +1,10 @@
+import 'dart:ffi';
+
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:pdf_text/pdf_text.dart';
+import 'package:pedantic/pedantic.dart';
 import 'package:speed_read/constants/colors.dart';
 import 'package:speed_read/constants/constants.dart';
 import 'package:speed_read/constants/theme.dart';
@@ -9,6 +12,7 @@ import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
+import 'package:uuid/uuid.dart';
 
 class BookListPage extends StatefulWidget {
   @override
@@ -42,11 +46,6 @@ class _BookListPageState extends State<BookListPage> {
 
     /// get info from pdf
     if (filePickerResult != null) {
-      var fakeBook = Book(title: 'Loading', author: '');
-      setState(() {
-        books.add(fakeBook);
-      });
-
       _pdfDoc = await PDFDoc.fromPath(filePickerResult.files.single.path!);
     }
 
@@ -56,18 +55,24 @@ class _BookListPageState extends State<BookListPage> {
 
     // TODO add a message error if file is not valid
 
-    var text = await _pdfDoc.text;
     var info = _pdfDoc.info;
     var newBook = Book(
-        path: filePickerResult.files.single.path,
-        text: text.replaceAll(RegExp('-\n'), ''),
-        length: RegExp('\\w*\\W').allMatches(text).length,
-        title: info.title,
-        author: info.author);
-    var id = await _bookRepository.save(newBook);
-    newBook.id = id;
+        id: DateTime.now().millisecond,
+        uuid: Uuid().v4(),
+        path: filePickerResult.files.single.path!,
+        title: info.title ?? '',
+        author: info.author ?? '');
+
+    unawaited(Future(() async {
+      var text = await _pdfDoc!.text;
+      newBook.text = text.replaceAll(RegExp('-\n'), '');
+      newBook.length = RegExp('\\w*(\$|\\W)').allMatches(text).length;
+      newBook.loading = false;
+      unawaited(_bookRepository.save(newBook));
+      setState(() {});
+    }));
+
     setState(() {
-      books.removeLast();
       books.add(newBook);
     });
   }
@@ -118,7 +123,7 @@ class _BookListPageState extends State<BookListPage> {
         borderRadius: BorderRadius.all(Radius.circular(borderRadius)),
         color: greenAccent,
         child: Padding(
-          padding: const EdgeInsets.all(padding),
+          padding: const EdgeInsets.all(8),
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -136,7 +141,10 @@ class _BookListPageState extends State<BookListPage> {
                   Icons.note_add,
                   color: white,
                 ),
-                onPressed: () {},
+                onPressed: () async {
+                  await NavigationService().navigateTo(MANUAL_BOOK_PAGE);
+                  findAllBooks();
+                },
               ),
               IconButton(
                 icon: Icon(
@@ -159,9 +167,14 @@ class _BookListPageState extends State<BookListPage> {
         ),
         color: white,
         child: ListTile(
-            // leading: Icon(Icons.favorite_border),
-            title: Text(book.title ?? 'unknown title'),
-            subtitle: Text(book.author ?? 'unknown author'),
+            leading: book.loading
+                ? CircularProgressIndicator()
+                : Icon(
+                    Icons.book,
+                    color: black,
+                  ),
+            title: Text(book.title),
+            subtitle: Text(book.author),
             trailing: PopupMenuButton<Option>(
               onSelected: onSelectedOption,
               color: trueWhite,
@@ -172,13 +185,13 @@ class _BookListPageState extends State<BookListPage> {
               itemBuilder: (BuildContext context) {
                 return options.map((Option option) {
                   return PopupMenuItem<Option>(
-                      value: option.setBookId(book.id!),
+                      value: option.setBookId(book.id),
                       child: Text(option.title));
                 }).toList();
               },
             ),
             onTap: () {
-              if (book.title != 'Loading') {
+              if (!book.loading) {
                 NavigationService().navigateTo(CURSOR_PAGE, arguments: book);
               }
             }));

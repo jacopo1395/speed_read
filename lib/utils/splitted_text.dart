@@ -1,12 +1,8 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 
-abstract class SplittedText {
-  List<String> getSplittedText(Size pageSize, TextStyle textStyle, String text);
-}
+class SplittedText {
 
-class SplittedTextImpl extends SplittedText {
-  @override
   List<String> getSplittedText(
       Size pageSize, TextStyle textStyle, String text) {
     final _pageTexts = <String>[];

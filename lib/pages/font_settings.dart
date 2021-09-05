@@ -88,7 +88,7 @@ class _FontSettingsPageState extends State<FontSettingsPage> {
                       final colorBeforeDialog = textDialogPickerColor;
                       // Wait for the picker to close, if dialog was dismissed,
                       // then restore the color we had before it was opened.
-                      if (!(await colorPickerDialog())) {
+                      if (!(await colorPickerDialog(textDialogPickerColor))) {
                         setState(() {
                           textDialogPickerColor = colorBeforeDialog;
                         });
@@ -111,16 +111,16 @@ class _FontSettingsPageState extends State<FontSettingsPage> {
                     width: 44,
                     height: 44,
                     borderRadius: 4,
-                    color: textDialogPickerColor,
+                    color: backgroundDialogPickerColor,
                     onSelectFocus: false,
                     onSelect: () async {
                       // Store current color before we open the dialog.
-                      final colorBeforeDialog = textDialogPickerColor;
+                      final colorBeforeDialog = backgroundDialogPickerColor;
                       // Wait for the picker to close, if dialog was dismissed,
                       // then restore the color we had before it was opened.
-                      if (!(await colorPickerDialog())) {
+                      if (!(await colorPickerDialog(backgroundDialogPickerColor))) {
                         setState(() {
-                          textDialogPickerColor = colorBeforeDialog;
+                          backgroundDialogPickerColor = colorBeforeDialog;
                         });
                       }
                     },
@@ -141,14 +141,14 @@ class _FontSettingsPageState extends State<FontSettingsPage> {
                 AppThemes.primaryTextTheme.bodyText1?.copyWith(color: color))));
   }
 
-  Future<bool> colorPickerDialog() async {
+  Future<bool> colorPickerDialog(Color startColor) async {
     return ColorPicker(
       // Use the dialogPickerColor as start color.
-      color: textDialogPickerColor,
+      color: startColor,
       // Update the dialogPickerColor using the callback.
       onColorChanged: (Color color) {
-        setState(() => textDialogPickerColor = color);
-        changeTextColor(textDialogPickerColor);
+        setState(() => startColor = color);
+        changeTextColor(startColor);
       },
       width: 40,
       height: 40,

@@ -3,10 +3,12 @@ import 'package:speed_read/models/book.dart';
 import 'package:speed_read/pages/book_list.dart';
 import 'package:speed_read/pages/cursor_reader.dart';
 import 'package:speed_read/pages/font_settings.dart';
+import 'package:speed_read/pages/manual_book.dart';
 
 const BOOK_LIST = '/bookList';
 const CURSOR_PAGE = '/cursorReader';
 const FONT_SETTINGS = '/fontSettings';
+const MANUAL_BOOK_PAGE = '/manualBook';
 
 MaterialPageRoute<dynamic> Function(RouteSettings) routes =
     (RouteSettings settings) {
@@ -31,6 +33,14 @@ MaterialPageRoute<dynamic> Function(RouteSettings) routes =
       return MaterialPageRoute<FontSettingsPage>(
         builder: (context) {
           return FontSettingsPage();
+        },
+        settings: settings,
+      );
+
+    case MANUAL_BOOK_PAGE:
+      return MaterialPageRoute<ManualBookPage>(
+        builder: (context) {
+          return ManualBookPage();
         },
         settings: settings,
       );

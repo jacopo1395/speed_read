@@ -19,6 +19,12 @@ class BookRepository {
     return Book.fromMap(elem[0]);
   }
 
+  Future<Book?> findByUuid(String uuid) async {
+    final client = await LocalStorageService().db;
+    final elem = await client.query('book', where: 'uuid = ?', whereArgs: [uuid]);
+    return Book.fromMap(elem[0]);
+  }
+
   Future<int> save(Book book) async {
     var client = await LocalStorageService().db;
     return await client.insert(

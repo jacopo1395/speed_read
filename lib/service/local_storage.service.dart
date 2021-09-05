@@ -48,12 +48,14 @@ class LocalStorageService {
   Future createTable(Database db) async {
     await db.execute('''create TABLE book(
           id INTEGER PRIMARY KEY AUTOINCREMENT,
+          uuid TEXT,
           title TEXT,
           path TEXT,
           text TEXT,
           length INTEGER,
           author TEXT,
-          completion INTEGER
+          completion INTEGER,
+          loading INTEGER
       );''');
   }
 

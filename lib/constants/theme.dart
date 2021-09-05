@@ -25,7 +25,7 @@ class AppThemes {
           ),
           headline2: base.headline2?.copyWith(
             fontSize: 34,
-            color: Colors.red,
+            color: Colors.green,
             fontWeight: FontWeight.w700,
           ),
           headline3: base.headline3?.copyWith(
@@ -40,7 +40,7 @@ class AppThemes {
           ),
           headline5: base.headline5?.copyWith(
             fontSize: 22,
-            color: Colors.red,
+            color: Colors.green,
             fontWeight: FontWeight.w700,
           ),
           // title appbar
@@ -85,7 +85,7 @@ class AppThemes {
           ),
           button: base.button?.copyWith(
             fontWeight: FontWeight.bold,
-            color: Colors.red,
+            color: Colors.green,
           ),
         )
         .apply(
@@ -96,7 +96,7 @@ class AppThemes {
   static AppBarTheme? _buildPrimaryAppBarTheme(ThemeData themeData) {
     return themeData.appBarTheme.copyWith(
         iconTheme: themeData.iconTheme.copyWith(color: black),
-        color: greenPrimary,
+        color: white,
         textTheme: _buildPrimaryTextTheme(themeData.textTheme));
   }
 }
