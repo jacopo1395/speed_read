@@ -13,6 +13,7 @@ import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
 import 'package:speed_read/service/shared_preferences.service.dart';
 import 'package:speed_read/utils/dynamic_size.dart';
+import 'package:speed_read/utils/markdown_parser.dart';
 import 'package:speed_read/utils/splitted_text.dart';
 import 'package:speed_read/utils/utils.dart';
 
@@ -30,7 +31,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   int _cursor = 0;
 
-  List<String> _paragraphsText = [];
+  List<TextSpan> _paragraphsText = [];
   List<int> _paragraphsLength = [];
 
   int _paragraphIndex = 1;
@@ -45,6 +46,8 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   final GlobalKey pageKey = GlobalKey();
   Size? _size;
 
+  late TextSpan textParsed;
+
   @override
   void initState() {
     WidgetsBinding.instance!.addPostFrameCallback((_) {
@@ -56,14 +59,12 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   Future<void> initReader() async {
     book = await refreshBook();
 
+    textParsed = getTextSpan();
+
     _size = _dynamicSize.getSize(pageKey, context);
 
-    _paragraphsText = _splittedText.getSplittedText(
-        _size!, Theme.of(context).textTheme.bodyText1!.copyWith(), book.text);
-
-    _paragraphsLength = _paragraphsText
-        .map((e) => e.split(RegExp('\\w*(\$|\\W)')).length)
-        .toList();
+    _paragraphsText = _splittedText.getSplittedText(_size!, textParsed);
+    _paragraphsLength = _paragraphsText.map((e) => e.children!.length).toList();
 
     setState(() {
       _totalPages = _paragraphsText.length;
@@ -113,7 +114,10 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
               if (_totalPages == 0) {
                 return CircularProgressIndicator();
               }
-              return buildRichText(index);
+              return SingleChildScrollView(
+                child: RichText(text: getTextSpan(paragraphIndex: index)),
+              );
+              // return buildRichText(index);
             }),
       ),
     );
@@ -123,7 +127,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
     return RichText(
       text: TextSpan(
           children: RegExp('\\w*(\$|\\W)')
-              .allMatches(_paragraphsText[paragraph])
+              .allMatches(_paragraphsText[paragraph].text!)
               .mapIndexed((word, index) => TextSpan(
                   text: word.group(0),
                   recognizer: _tapRecognizer(getNumberWord(paragraph, index)),
@@ -183,10 +187,11 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   void startTimer() {
     var oneSec = Duration(milliseconds: _speed);
-    _timer ??= Timer.periodic(
+    _timer = Timer.periodic(
       oneSec,
       (Timer timer) {
-        if (_cursor >= book.length) {
+        if (_cursor + 2 >=
+            _paragraphsLength.reduce((value, element) => value + element)) {
           // end of book
           _timer!.cancel();
         }
@@ -338,7 +343,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
         });
         var i =
             await BookRepository().update(book.copyWith(completion: _cursor));
-        debugPrint(i.toString());
+        debugPrint(_cursor.toString());
       };
   }
 
@@ -357,5 +362,76 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   Future<Book> refreshBook() async {
     return (await BookRepository().findById(book.id))!;
+  }
+
+  TextSpan getTextSpan({int? paragraphIndex = -1}) {
+    var startTime = DateTime.now();
+    var result = List<TextSpan>.empty(growable: true);
+    var index = 0;
+
+    book.text.split('\n').forEach((line) {
+      var head = RegExp('^ *#+ +').hasMatch(line);
+      var point = RegExp('^ *- +').hasMatch(line);
+      var quote = RegExp('^ *> +').hasMatch(line);
+      var list = RegExp('^ *\\d+\\. +').hasMatch(line);
+
+      var base = Theme.of(context).textTheme.bodyText1!;
+      if (head) {
+        line = line.replaceAll(RegExp('^ *#+ +'), '');
+        base = base.copyWith(
+          fontSize: Theme.of(context).textTheme.bodyText1!.fontSize! + 2.0,
+          fontWeight: FontWeight.bold,
+        );
+      }
+
+      if (point) {
+        line = line.replaceAll(RegExp('^ *- +'), '• ');
+      }
+
+      var bold = RegExp('\\*\\*\\w+\\*\\*').allMatches(line);
+      var italic = RegExp('\\*\\w+\\*').allMatches(line);
+
+      var listLine = line.split(' ').map((word) {
+        // if (bold) {
+        //   base = base.copyWith(fontWeight: FontWeight.bold);
+        // }
+        //
+        // if (italic) {
+        //   base = base.copyWith(fontStyle: FontStyle.italic);
+        // }
+
+        return TextSpan(
+            text: word + ' ',
+            recognizer: _tapRecognizer(index),
+            style: base.copyWith(
+                color: Theme.of(context)
+                    .textTheme
+                    .bodyText1
+                    ?.color
+                    ?.withOpacity(opacity(index++))));
+      }).toList();
+      result.addAll(listLine);
+      result.add(TextSpan(
+          text: '\n',
+          recognizer: _tapRecognizer(index),
+          style: base.copyWith(
+              color: Theme.of(context)
+                  .textTheme
+                  .bodyText1
+                  ?.color
+                  ?.withOpacity(opacity(index++)))));
+    });
+
+    if (paragraphIndex! >= 0) {
+      var start = 0;
+      for (var i = 0; i < paragraphIndex; i++) {
+        start += _paragraphsLength[i];
+      }
+      result = result.sublist(start, start + _paragraphsLength[paragraphIndex]);
+    }
+    var endTime = DateTime.now();
+    debugPrint(
+        'duration:' + endTime.difference(startTime).inMilliseconds.toString());
+    return TextSpan(children: result);
   }
 }

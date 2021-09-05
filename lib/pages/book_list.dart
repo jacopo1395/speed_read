@@ -66,7 +66,7 @@ class _BookListPageState extends State<BookListPage> {
     unawaited(Future(() async {
       var text = await _pdfDoc!.text;
       newBook.text = text.replaceAll(RegExp('-\n'), '');
-      newBook.length = RegExp('\\w*(\$|\\W)').allMatches(text).length;
+      newBook.length = text.split(' ').length;
       newBook.loading = false;
       unawaited(_bookRepository.save(newBook));
       setState(() {});

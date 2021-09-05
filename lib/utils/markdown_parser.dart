@@ -9,8 +9,9 @@ class MarkdownParser {
   MarkdownParser(this.text);
 
   TextSpan getTextSpan(
-      BuildContext context, GestureRecognizer? tapRecognizer, double opacity) {
+      BuildContext context, GestureRecognizer? tapRecognizer, int cursor) {
     var result = List<TextSpan>.empty(growable: true);
+    var index = 0;
     text.split('\n').map((line) {
       var head = RegExp('^ *#+ +').hasMatch(line);
       var point = RegExp('^ *- +').hasMatch(line);
@@ -34,11 +35,11 @@ class MarkdownParser {
         var bold = RegExp('\\*\\*\\w+\\*\\*').hasMatch(word);
         var italic = RegExp('\\*\\w+\\*').hasMatch(word);
 
-        if(bold){
+        if (bold) {
           base = base.copyWith(fontWeight: FontWeight.bold);
         }
 
-        if(italic){
+        if (italic) {
           base = base.copyWith(fontStyle: FontStyle.italic);
         }
 
@@ -50,10 +51,12 @@ class MarkdownParser {
                     .textTheme
                     .bodyText1
                     ?.color
-                    ?.withOpacity(opacity)));
+                    ?.withOpacity(0.5)));
       }).toList();
       result.addAll(listLine);
     });
     return TextSpan(children: result);
   }
+
+
 }

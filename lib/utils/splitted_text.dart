@@ -1,12 +1,12 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:speed_read/utils/utils.dart';
 
 class SplittedText {
-
-  List<String> getSplittedText(
-      Size pageSize, TextStyle textStyle, String text) {
+  List<TextSpan> getSplittedText(Size pageSize, TextSpan textSpan) {
     final _pageTexts = <String>[];
-    final textSpan = TextSpan(text: text, style: textStyle);
+    final _pageSpans = <TextSpan>[];
+    // var text = textSpan.children!.map((e) => (e as TextSpan).text).join('');
     final textPainter = TextPainter(
       text: textSpan,
       textDirection: TextDirection.ltr,
@@ -34,17 +34,38 @@ class SplittedText {
         // https://stackoverflow.com/questions/56943994/how-to-get-the-raw-text-from-a-flutter-textbox/56943995#56943995
         currentPageEndIndex =
             textPainter.getPositionForOffset(Offset(left, top)).offset;
-        final pageText =
-            text.substring(currentPageStartIndex, currentPageEndIndex);
-        _pageTexts.add(pageText);
+        // final pageText =
+        //     text.substring(currentPageStartIndex, currentPageEndIndex);
+        // _pageTexts.add(pageText);
+        var _paragraph = TextSpan(children: []);
+
+        var countLetter = 0;
+        textSpan.children!.forEach((element) {
+          if (countLetter >= currentPageStartIndex &&
+              countLetter < currentPageEndIndex) {
+            _paragraph.children!.add(element as TextSpan);
+          }
+          countLetter += (element as TextSpan).text!.length;
+        });
+
+        _pageSpans.add(_paragraph);
 
         currentPageStartIndex = currentPageEndIndex;
         currentPageBottom = top + pageSize.height;
       }
     }
 
-    final lastPageText = text.substring(currentPageStartIndex);
-    _pageTexts.add(lastPageText);
-    return _pageTexts;
+    // final lastPageText = text.substring(currentPageStartIndex);
+    // _pageTexts.add(lastPageText);
+    var countLetter = 0;
+    var _paragraph = TextSpan(children: []);
+    textSpan.children!.forEach((element) {
+      if (countLetter >= currentPageStartIndex) {
+        _paragraph.children!.add(element as TextSpan);
+      }
+      countLetter += (element as TextSpan).text!.length;
+    });
+    _pageSpans.add(_paragraph);
+    return _pageSpans;
   }
 }
