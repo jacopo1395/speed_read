@@ -186,9 +186,10 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
     _timer ??= Timer.periodic(
       oneSec,
       (Timer timer) {
-        if (_cursor >= book.length) {
+        if (_cursor + 1 >= book.length) {
           // end of book
-          _timer!.cancel();
+          resetTimer();
+          return;
         }
 
         if (_cursor + 1 ==
@@ -338,7 +339,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
         });
         var i =
             await BookRepository().update(book.copyWith(completion: _cursor));
-        debugPrint(i.toString());
+        debugPrint(index.toString());
       };
   }
 
