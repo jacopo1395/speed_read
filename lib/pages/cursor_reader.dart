@@ -38,6 +38,7 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   Timer? _timer;
   int _speed = SharedPreferenceService().speed;
+  Orientation? lastOrientation;
 
   final PageController _pageController = PageController();
   final DynamicSize _dynamicSize = DynamicSize();
@@ -65,11 +66,10 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
         .map((e) => e.split(RegExp('\\w*(\$|\\W)')).length)
         .toList();
 
-    setState(() {
-      _totalPages = _paragraphsText.length;
-      _paragraphIndex = findParagraph();
-      _cursor = book.completion;
-    });
+    _totalPages = _paragraphsText.length;
+    _paragraphIndex = findParagraph();
+    _cursor = book.completion;
+    setState(() {});
     unawaited(_pageController.animateToPage(_paragraphIndex - 1,
         duration: Duration(milliseconds: 50), curve: Curves.easeInToLinear));
   }
@@ -78,7 +78,15 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(body: buildBody(), bottomNavigationBar: buildBottomBar());
+    return Scaffold(
+        body: OrientationBuilder(builder: (context, orientation) {
+          if(lastOrientation != null && orientation != lastOrientation) {
+            initReader();
+          }
+          lastOrientation = orientation;
+          return buildBody();
+        }),
+        bottomNavigationBar: buildBottomBar());
   }
 
   Container buildBody() {
@@ -97,26 +105,37 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
     );
   }
 
-  Expanded buildReader() {
+  Widget buildReader() {
     return Expanded(
       child: Container(
-        key: pageKey,
-        child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (val) {
-              setState(() {
-                _paragraphIndex = val + 1;
-              });
-            },
-            itemCount: _totalPages,
-            itemBuilder: (context, index) {
-              if (_totalPages == 0) {
-                return CircularProgressIndicator();
-              }
-              return buildRichText(index);
-            }),
-      ),
+          key: pageKey,
+          child: PageView.builder(
+              controller: _pageController,
+              onPageChanged: (val) {
+                setState(() {
+                  _paragraphIndex = val + 1;
+                });
+              },
+              itemCount: _totalPages,
+              itemBuilder: (context, index) {
+                return buildRichText(index);
+              })),
     );
+  }
+
+  Future<PageView> buildPageView() async {
+    var result = PageView.builder(
+        controller: _pageController,
+        onPageChanged: (val) {
+          setState(() {
+            _paragraphIndex = val + 1;
+          });
+        },
+        itemCount: _totalPages,
+        itemBuilder: (context, index) {
+          return buildRichText(index);
+        });
+    return result;
   }
 
   RichText buildRichText(int paragraph) {
@@ -358,5 +377,9 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
 
   Future<Book> refreshBook() async {
     return (await BookRepository().findById(book.id))!;
+  }
+
+  Widget getBody() {
+    return _totalPages == 0 ? CircularProgressIndicator() : buildReader();
   }
 }
