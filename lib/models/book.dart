@@ -1,8 +1,11 @@
+import 'dart:convert';
+
 class Book {
   int id;
   String uuid;
   String title;
   String text;
+  List<String> pages;
   int length;
   String? path;
   String author;
@@ -16,6 +19,7 @@ class Book {
       required this.uuid,
       this.title = 'unknown title',
       this.text = 'no content',
+      this.pages = const [],
       this.length = 0,
       this.path,
       this.author = 'unknown author',
@@ -30,6 +34,7 @@ class Book {
     map['uuid'] = uuid;
     map['path'] = path;
     map['title'] = title;
+    map['pages'] = jsonEncode(pages);
     map['text'] = text;
     map['length'] = length;
     map['author'] = author;
@@ -47,6 +52,7 @@ class Book {
       title: map['title'] as String,
       path: (map['path'] != null) ? map['path'] as String : null,
       text: map['text'] as String,
+      pages: (jsonDecode(map['pages'] as String) as List<dynamic>).cast<String>(),
       length: map['length'] as int,
       author: map['author'] as String,
       completion: map['completion'] as int,
@@ -61,6 +67,7 @@ class Book {
     String? uuid,
     String? title,
     String? text,
+    List<String>? pages,
     int? length,
     String? path,
     String? author,
@@ -74,6 +81,7 @@ class Book {
         uuid: uuid ?? this.uuid,
         title: title ?? this.title,
         text: text ?? this.text,
+        pages: pages ?? this.pages,
         length: length ?? this.length,
         path: path ?? this.path,
         author: author ?? this.author,

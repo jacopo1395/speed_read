@@ -52,6 +52,7 @@ class LocalStorageService {
           title TEXT,
           path TEXT,
           text TEXT,
+          pages TEXT,
           length INTEGER,
           author TEXT,
           completion INTEGER,

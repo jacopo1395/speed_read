@@ -35,6 +35,7 @@ class _ManualBookPageState extends State<ManualBookPage> {
               maxLines: null,
               onChanged: (String value) {
                 _book!.text = value;
+                _book!.pages = value.split('<div style="page-break-after: always;"></div>');
                 _book!.length = value.split(' ').length;
               },
             ),

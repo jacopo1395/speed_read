@@ -16,6 +16,7 @@ import 'package:speed_read/utils/dynamic_size.dart';
 import 'package:speed_read/utils/markdown_parser.dart';
 import 'package:speed_read/utils/splitted_text.dart';
 import 'package:speed_read/utils/utils.dart';
+import 'package:speed_read/widgets/Paginator.dart';
 
 class CursorReaderPage extends StatefulWidget {
   final Book book;
@@ -57,22 +58,23 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   Future<void> initReader() async {
-    book = await refreshBook();
+    // book = await refreshBook();
 
-    textParsed = getTextSpan();
+    // textParsed = getTextSpan();
 
     _size = _dynamicSize.getSize(pageKey, context);
+    _totalPages = book.pages.length;
 
-    _paragraphsText = _splittedText.getSplittedText(_size!, textParsed);
-    _paragraphsLength = _paragraphsText.map((e) => e.children!.length).toList();
+    // _paragraphsText = _splittedText.getSplittedText(_size!, textParsed);
+    // _paragraphsLength = _paragraphsText.map((e) => e.children!.length).toList();
 
     setState(() {
-      _totalPages = _paragraphsText.length;
-      _paragraphIndex = findParagraph();
-      _cursor = book.completion;
+      // _totalPages = _paragraphsText.length;
+      // _paragraphIndex = findParagraph();
+      // _cursor = book.completion;
     });
-    unawaited(_pageController.animateToPage(_paragraphIndex - 1,
-        duration: Duration(milliseconds: 50), curve: Curves.easeInToLinear));
+    // unawaited(_pageController.animateToPage(_paragraphIndex - 1,
+    //     duration: Duration(milliseconds: 50), curve: Curves.easeInToLinear));
   }
 
   _CursorReaderPageState(this.book);
@@ -101,25 +103,16 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   Expanded buildReader() {
     return Expanded(
       child: Container(
-        key: pageKey,
-        child: PageView.builder(
-            controller: _pageController,
-            onPageChanged: (val) {
-              setState(() {
-                _paragraphIndex = val + 1;
-              });
+          key: pageKey,
+          child: FutureBuilder<Book>(
+            future: refreshBook(),
+            builder: (context, snapshot) {
+              return snapshot.connectionState == ConnectionState.waiting
+                  ? Container(color: Colors.red,)
+                  // : Container(color: Colors.red,);
+                  : Paginator(snapshot.data!, _size!);
             },
-            itemCount: _totalPages,
-            itemBuilder: (context, index) {
-              if (_totalPages == 0) {
-                return CircularProgressIndicator();
-              }
-              return SingleChildScrollView(
-                child: RichText(text: getTextSpan(paragraphIndex: index)),
-              );
-              // return buildRichText(index);
-            }),
-      ),
+          )),
     );
   }
 
@@ -361,10 +354,15 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
   }
 
   Future<Book> refreshBook() async {
-    return (await BookRepository().findById(book.id))!;
+    var start = DateTime.now();
+    var result = (await BookRepository().findById(book.id))!;
+    var end = DateTime.now();
+    debugPrint('retrieve book in (ms): ' +
+        end.difference(start).inMilliseconds.toString());
+    return result;
   }
 
-  TextSpan getTextSpan({int? paragraphIndex = -1}) {
+  TextSpan getTextSpan(Book book, {int? paragraphIndex = -1}) {
     var startTime = DateTime.now();
     var result = List<TextSpan>.empty(growable: true);
     var index = 0;
@@ -430,8 +428,8 @@ class _CursorReaderPageState extends State<CursorReaderPage> {
       result = result.sublist(start, start + _paragraphsLength[paragraphIndex]);
     }
     var endTime = DateTime.now();
-    debugPrint(
-        'duration:' + endTime.difference(startTime).inMilliseconds.toString());
+    debugPrint('getTextSpan in (ms):' +
+        endTime.difference(startTime).inMilliseconds.toString());
     return TextSpan(children: result);
   }
 }

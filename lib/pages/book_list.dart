@@ -1,5 +1,3 @@
-import 'dart:ffi';
-
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
@@ -12,6 +10,7 @@ import 'package:speed_read/dao/book_repository.dart';
 import 'package:speed_read/models/book.dart';
 import 'package:speed_read/routes.dart';
 import 'package:speed_read/service/navigation.service.dart';
+import 'package:speed_read/widgets/Option.dart';
 import 'package:uuid/uuid.dart';
 
 class BookListPage extends StatefulWidget {
@@ -66,6 +65,7 @@ class _BookListPageState extends State<BookListPage> {
     unawaited(Future(() async {
       var text = await _pdfDoc!.text;
       newBook.text = text.replaceAll(RegExp('-\n'), '');
+      newBook.pages = [text]; // TODO spli in pages
       newBook.length = text.split(' ').length;
       newBook.loading = false;
       unawaited(_bookRepository.save(newBook));
@@ -207,21 +207,5 @@ class _BookListPageState extends State<BookListPage> {
   }
 }
 
-class Option {
-  final String title;
-  final OptionType type;
-  int? bookId;
 
-  Option({required this.title, required this.type, this.bookId});
 
-  Option setBookId(int bookId) {
-    this.bookId = bookId;
-    return this;
-  }
-}
-
-List<Option> options = <Option>[
-  Option(title: 'delete', type: OptionType.REMOVE),
-];
-
-enum OptionType { REMOVE }
